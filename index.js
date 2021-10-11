@@ -3,45 +3,54 @@
  */
 
 import React from 'react';
-import {View, Button, ActivityIndicator, Modal} from 'react-native';
-import {Navigation} from 'react-native-navigation';
+import {ActivityIndicator, Button, View} from 'react-native';
+import {Navigation, NavigationFunctionComponent} from 'react-native-navigation';
 
-function SpinnerOverlay() {
+const SpinnerOverlay: NavigationFunctionComponent = () => {
+  setTimeout(() => {
+    Navigation.dismissAllOverlays();
+    Navigation.dismissAllModals(); // But this does not
+  }, 2000);
+
   return (
-    <Modal transparent>
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          right: 0,
-          left: 0,
-          backgroundColor: 'black',
-          opacity: 0.5,
-        }}
-      />
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-        <ActivityIndicator size="large" color={'white'} />
-      </View>
-    </Modal>
+    <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+      <ActivityIndicator size="large" color={'white'} />
+    </View>
   );
+};
+
+SpinnerOverlay.options = {
+  layout: {
+    componentBackgroundColor: '#00000050',
+  },
+  overlay: {
+    interceptTouchOutside: false,
+  },
+};
+
+function showSpinnerOverlay() {
+  Navigation.showOverlay({
+    component: {
+      name: 'Spinner',
+    },
+  });
+}
+
+function showModal1() {
+  Navigation.showModal({
+    stack: {
+      children: [
+        {
+          component: {
+            name: 'Modal1',
+          },
+        },
+      ],
+    },
+  });
 }
 
 const Home = () => {
-  const showModal1 = () => {
-    Navigation.showModal({
-      stack: {
-        children: [
-          {
-            component: {
-              name: 'Modal1',
-            },
-          },
-        ],
-      },
-    });
-  };
-
   return (
     <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
       <Button title="Present Modal1" onPress={showModal1} />
@@ -49,31 +58,10 @@ const Home = () => {
   );
 };
 
-const Modal1 = ({ componentId }) => {
-  const repro = () => {
-    Navigation.showOverlay({
-      component: {
-        id: 'spinner1',
-        name: 'Spinner',
-        options: {
-          layout: {
-            componentBackgroundColor: 'transparent',
-            backgroundColor: 'transparent',
-          },
-        },
-      },
-    });
-
-    setTimeout(() => {
-      Navigation.dismissOverlay('spinner1');
-      //Navigation.dismissModal(componentId); // This will correctly fire the event
-      Navigation.dismissAllModals(); // But this does not
-    }, 1000);
-  };
-
+const Modal1 = () => {
   return (
     <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-      <Button title="Reproduce Bug" onPress={() => repro()} />
+      <Button title="Reproduce Bug" onPress={showSpinnerOverlay} />
     </View>
   );
 };
@@ -82,11 +70,8 @@ Navigation.registerComponent('Spinner', () => SpinnerOverlay);
 Navigation.registerComponent('Home', () => Home);
 Navigation.registerComponent('Modal1', () => Modal1);
 
-Navigation.events().registerModalDismissedListener(event => {
-  console.log('MODAL DISMISS:', event);
-});
-
 Navigation.events().registerAppLaunchedListener(() => {
+  Navigation.dismissAllModals();
   Navigation.setRoot({
     root: {
       stack: {
@@ -100,4 +85,8 @@ Navigation.events().registerAppLaunchedListener(() => {
       },
     },
   });
+});
+
+Navigation.events().registerModalDismissedListener(event => {
+  console.log('MODAL DISMISS:', event);
 });
